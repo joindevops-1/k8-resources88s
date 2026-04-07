@@ -1,0 +1,39 @@
+# Sidecar pattern: nginx + log-shipper sidecar sharing logs via emptyDir
+#
+# How it works:
+#   1. nginx writes access/error logs to /var/log/nginx (emptyDir volume)
+#   2. log-shipper sidecar mounts the same volume and can read those logs
+#
+# To verify:
+#   kubectl exec -it nginx-with-log-shipper -c log-shipper -- /bin/sh
+#   > ls /var/log/nginx/
+#   > cat /var/log/nginx/access.log
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-with-log-shipper
+  namespace: default
+spec:
+  containers:
+
+  - name: nginx
+    image: nginx:1.25-alpine
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: nginx-logs
+      mountPath: /var/log/nginx
+
+  - name: log-shipper
+    image: almalinux:9
+    command: ["sleep", "infinity"]
+    volumeMounts:
+    - name: nginx-logs
+      mountPath: /var/log/nginx
+      readOnly: true
+
+  volumes:
+  - name: nginx-logs
+    emptyDir:
+      sizeLimit: 200Mi
