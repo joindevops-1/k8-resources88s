@@ -19,12 +19,24 @@ spec:
         limits:
           cpu: "500m"
           memory: "128Mi"
+
+      # podIP and nodeName only work as env vars
+      env:
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+
       volumeMounts:
-        - name: pod-info
+        - name: pod-info        # must match volume name below
           mountPath: /etc/podinfo
 
   volumes:
-    - name: pod-info
+    - name: pod-info            # must match volumeMounts name above
       downwardAPI:
         items:
           - path: "pod-name"
@@ -33,12 +45,15 @@ spec:
           - path: "pod-namespace"
             fieldRef:
               fieldPath: metadata.namespace
-          - path: "pod-ip"
+          - path: "pod-uid"
             fieldRef:
-              fieldPath: status.podIP
-          - path: "node-name"
+              fieldPath: metadata.uid
+          - path: "labels"
             fieldRef:
-              fieldPath: spec.nodeName
+              fieldPath: metadata.labels
+          - path: "annotations"
+            fieldRef:
+              fieldPath: metadata.annotations
           - path: "cpu-limit"
             resourceFieldRef:
               containerName: app
@@ -47,6 +62,3 @@ spec:
             resourceFieldRef:
               containerName: app
               resource: limits.memory
-          - path: "labels"
-            fieldRef:
-              fieldPath: metadata.labels
